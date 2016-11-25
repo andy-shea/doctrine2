@@ -222,22 +222,18 @@ use Doctrine\Common\Util\ClassUtils;
     /**
      * {@inheritDoc}
      */
-    public function transactional($func)
+    public function transactional(callable $func)
     {
-        if (!is_callable($func)) {
-            throw new \InvalidArgumentException('Expected argument of type "callable", got "' . gettype($func) . '"');
-        }
-
         $this->conn->beginTransaction();
 
         try {
-            $return = call_user_func($func, $this);
+            $return = $func($this);
 
             $this->flush();
             $this->conn->commit();
 
-            return $return ?: true;
-        } catch (Exception $e) {
+            return $return;
+        } catch (\Throwable $e) {
             $this->close();
             $this->conn->rollBack();
 

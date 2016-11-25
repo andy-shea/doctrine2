@@ -72,9 +72,9 @@ class EntityManagerTest extends OrmTestCase
     {
         $rsm = new ResultSetMapping();
         $this->_em->getConfiguration()->addNamedNativeQuery('foo', 'SELECT foo', $rsm);
-        
+
         $query = $this->_em->createNamedNativeQuery('foo');
-        
+
         self::assertInstanceOf('Doctrine\ORM\NativeQuery', $query);
     }
 
@@ -116,14 +116,14 @@ class EntityManagerTest extends OrmTestCase
         self::assertInstanceOf('Doctrine\ORM\Query', $q);
         self::assertEquals('SELECT 1', $q->getDql());
     }
-    
+
     /**
      * @covers Doctrine\ORM\EntityManager::createNamedQuery
      */
     public function testCreateNamedQuery()
     {
         $this->_em->getConfiguration()->addNamedQuery('foo', 'SELECT 1');
-        
+
         $query = $this->_em->createNamedQuery('foo');
         self::assertInstanceOf('Doctrine\ORM\Query', $query);
         self::assertEquals('SELECT 1', $query->getDql());
@@ -174,29 +174,31 @@ class EntityManagerTest extends OrmTestCase
         $this->_em->$methodName(new \stdClass());
     }
 
-    /**
-     * @group DDC-1125
-     */
-    public function testTransactionalAcceptsReturn()
+    public function dataToBeReturnedByTransactional()
     {
-        $return = $this->_em->transactional(function ($em) {
-            return 'foo';
-        });
+        return array(
+            array(null),
+            array(false),
+            array('foo'),
+        );
+    }
 
-        self::assertEquals('foo', $return);
+    /**
+     * @dataProvider dataToBeReturnedByTransactional
+     */
+    public function testTransactionalAcceptsReturn($value)
+    {
+        self::assertSame(
+            $value,
+            $this->_em->transactional(function ($em) use ($value) {
+                return $value;
+            })
+        );
     }
 
     public function testTransactionalAcceptsVariousCallables()
     {
         self::assertSame('callback', $this->_em->transactional(array($this, 'transactionalCallback')));
-    }
-
-    public function testTransactionalThrowsInvalidArgumentExceptionIfNonCallablePassed()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Expected argument of type "callable", got "object"');
-
-        $this->_em->transactional($this);
     }
 
     public function transactionalCallback($em)
